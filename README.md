@@ -29,7 +29,7 @@ Gas price is based off the "demand" of the blockchain. The more people want to m
 # Lesson 1
 * The first thing we need to do when we create a solidity program is defining the solidity compiler version.
 ```solidity
-pragma solidity 0.6.0; //We use solidity 0.6.0
+pragma solidity ^0.6.0; //We use solidity 0.6.0
 pragma solidity >=0.6.0; //We use a solidity version greater than or equal to 0.6.0
 pragma solidity <=0.6.0 //We use a solidity version lower than or equal to 0.6.0;
 pragma solidity >=0.6.0 <=0.9.0; //We use a solidity version greater than or equal to 0.6.0 and lower than or equal to 0.9.0
@@ -40,11 +40,324 @@ contract Contract{
     //code
 }
 ```
+Functions visibility:
+* external: it can be called only by other contracts
+* public: can be call by everyone
+* internal: Default visibility. Can be only called by functions in the current contract or contracts derivering from it (similar to protected in java)
+* private: Can only be called by funtions in the current contract
+
+## Function types
+* view: To just read data from the blockchain. They doesn't require gas to be executed. It is just for queries
+* pure: They don't store data in the blockchain or query data from the contract. They may do operation inside though
+
+```solidity
+function retrieve() public view returns(uint256){
+    return 1;
+}
+
+function sum(uinit256 num1, uinit256 num2) public pure returns(uint256){
+    return num1 + num2;
+}
+```
+
+State-changing function calls are called transactions
+
+## Structs
+They allow us to define new types in solidity. Is like defining a typed json.
+```solidity
+struct People {
+    string name;
+    uint256 age;
+}
+```
+## Arrays
+An array is a way of storing a list of an object or type. To add an element to an array we can use the function ```push```
+
+Variables types in functions:
+* memory: Data will only be stored during the execution of the function
+* storage: data will persist after execution
+
+## Mapping
+A dictionary like data structure, with one value per key
+```solidity
+//Declaration example
+mapping(string => uint256) public nameToAge
+
+//Writing example
+nameToAge["Charlie"]=27
+```
+
+## How deploy a contract using metamask and remix?
+1. Make a contract
+1. Install metamask and connect to the mainet/testnet where you want to deploy the contract.
+1. Use remix, and in deploy enviroment chose "Injected Web3". Also "Web3 provider" can b euse if we want to use our own node?
 
 
+# Lesson 2: Factory pattern
+A factory contract is a contrac that allow us to generate another contract.
+* How do we import a contract?
+```solidity
+import "contract/path/contract.sol"
+```
+* Herence:
+```solidity
+contract Son is Father{
+    //....
+}
+```
+
+# Lesson 3
+Key values:
+* ```msg.sender```: The address which call the function
+* ```msg.value```: Value in wei send with the function
+* *payable*: allows a function be call with wei
+* ABI (Application Binary interface): tells solidity and other programming languages how it can itneract with other contract.
+* *Using* keyord: The directive ```using A for B``` can be used to attach library functions (from the library A) to any type (B) in the context of the contract.
+* About SafeMath:
+    * For versions >=0.8.0 we don't need it anymore;
+    * For versions >=0.6.6 we don't need to call it explicitly;
+*
 
 
 # Financial decisions
 * Invest in cryptos. If it hasn't explode yet it main launchpad and dex are good options too.
 * Decentralization gives value to a blockchain
+
+# Lesson 4
+We need to install python, pip and py-solc-x before starting to work.
+* [python installation](https://www.python.org/downloads/)
+* [pip installation](https://phoenixnap.com/kb/install-pip-windows)
+* [py-solc-x](https://pypi.org/project/py-solc-x/)
+
+We may have problems with the PATH on windows if we are working in VSC, probabbly a wrong path for python executable. More information [here](https://geek-university.com/python/add-python-to-the-windows-path/)
+
+## Reaading our first smart contract from a file
+First we need to install a compiler, so we need to execute a file with the next lines of code
+```python
+from solcx import install_solc
+install_solc("0.6.0")
+```
+
+Then, in the file where most of our functionalitites will be developed we need to:
+1. Import the compiler
+1. Read the file with our contract
+1. Compile our solidity code
+
+```python
+# Import the compiler
+from solcx import compile_standard
+
+#Read the file with our contract
+with open("./SimpleStorage.sol", "r") as file:
+    simple_storage_file = file.read()
+    pass
+
+# Compile our solidity code
+compiled_sol = compile_standard(
+    {
+        "language": "Solidity",
+        "sources": {"SimpleStorage.sol": {"content": simple_storage_file}},
+        "settings": {
+            "outputSelection": {
+                "*": {"*": ["abi", "metadata", "evm.bytecode", "evm.sourceMap"]}
+            }
+        },
+    },
+    solc_version="0.6.0",
+)
+
+```
+
+The ABI is a JSON file which content a description of all the functions of the contract.
+
+To interact with any blockchain we need to use the library web3 and create a web3 provider
+```python
+from web3 import Web3
+
+node_uri = "http://127.0.0.1:7545"
+w3 = Web3(Web3.HTTPProvider(node_uri)) #We need a provider per instance
+```
+
+To deploy a contract we need to
+1. Build a transaction.
+1. Sign a transaction
+1. Send a transaction
+
+For this we need to code:
+```python
+
+# First we get the ABI and the bytecode
+bytecode= compiled_sol["contracts"]["SimpleStorage.sol"]["SimpleStorage"]["evm"]["bytecode"]["object"]
+abi= compiled_sol["contracts"]["SimpleStorage.sol"]["SimpleStorage"]["abi"]
+
+#Then we create the contract in python (it gives a special python object)
+SimpleStorage = w3.eth.contract(abi = abi, bytecode = bytecode) 
+
+# We build the transaction
+transaction = SimpleStorage.constructor().buildTransaction({
+    "chainId": chain_id,
+    "from": my_address,
+    "nonce": nonce
+})
+
+# 2. We sign a transaction
+signed_txn = w3.eth.account.sign_transaction(transaction, private_key=private_key)
+
+# 3. Send a transaction
+tx_hash = w3.eth.send_raw_transaction(signed_txn.rawTransaction)
+# We can wait until transaction is done or refused to continue
+tx_reciept = w3.eth.wait_for_transaction_receipt(tx_hash) 
+```
+
+## Working with a contract
+To interact with a deployed contract we need a provider, a contact address and an ABI
+
+``` python
+simple_storage= w3.eth.contract(address=tx_reciept.contractAddress, abi = abi)
+```
+
+We can interact with a contract in 2 ways:
+* Using the call function, which simulates doing a calling to a function (so, we don't spend gas)
+* Using the transact function, which do a call to the blockchain (we spend gas)
+
+In any of this cases we need to access to the functions object of the contract, call the ABI function (it return an object, it doesn't call the function) and decide if we want to use the *call* or the *transact* function.
+
+```python
+simple_storage.functions.retrieve().call()
+```
+
+Transaction with a contract is pretty similar to deploy it
+```python
+# 1. We need to build a transaction.
+#First we get a new nonce
+store_nonce = w3.eth.getTransactionCount(my_address)
+
+# We use the specif instance of the contract we got before. we need to access to the atribute functions and after that decide whiche ABI function use (and send the parameters here of cars)
+
+pre_build_store_transaction= simple_storage.functions.store(58)
+
+# We build the transaction
+store_transaction = pre_build_store_transaction.buildTransaction({
+    "chainId": chain_id,
+    "from": my_address,
+    "nonce": store_nonce
+})
+
+# 2. Sign a transaction
+signed_store_txn = w3.eth.account.sign_transaction(store_transaction, private_key=private_key)
+
+# 3. Send a transaction
+store_tx_hash = w3.eth.send_raw_transaction(signed_store_txn.rawTransaction)
+#Wait until transaction is don or refused
+store_tx_reciept = w3.eth.wait_for_transaction_receipt(store_tx_hash)
+
+#Continue
+```
+
+## Web 3 instalation
+We may need to install first cytoolz with ```pip install cython```
+Then we can isntal Web3 with ```pip install web3```
+
+To use variables in .env files we will need to instal the package **python-dotenv**
+
+## Ganache-cli in console
+To use ganache in the console
+[Documentation](https://www.npmjs.com/package/ganache-cli)
+
+# Lesson 5: Brownie
+Brownie is a Python-based development and testing framework for smart contracts targeting the Ethereum Virtual Machine.
+
+To install it we can use:
+1. ```python3 -m pip install --user pipx```
+1. ```python3 -m pipx ensurepath```
+1. ```pipx install eth-brownie```
+
+Or just: 
+1. ```pip install --user pipx```
+1. ```pipx ensurepath```
+1. ```pip install eth-brownie```
+
+To init a project just use the line: ```brownie init project-name```
+This will create the next folders:
+* build: Track down level information
+    * contracts: compiled contract
+    * deployments: Across all different chains
+    * interfaces
+* contracts: Contracts in solidity
+* interfaces
+* reports
+* scripts: To automate tasks
+* tests
+
+To compile our code we need to be in the main folder and run ```brownie compile```
+
+To interact with a mainet or testnet we need to add a new account. We can do this with the command:
+```brownie accounts new <account-alias>```
+
+This will request a private key that will be cypher, an a generic password. This will hide the private key in our computer.
+
+To delete any of the accounts information we can run ```brownie accounts delete <account-alias>```.
+
+To list all the accounts saved we can run ```brownie accounts list```
+
+## brownie-config.yaml
+A special file to configure brownie behaviour
+[Documentation](https://eth-brownie.readthedocs.io/en/stable/config.html)
+
+## Deploy a contract
+To deploy the contract we need to import it into the deploy file and use the function deploy which just require an account from where deploy
+```python
+from brownie import SimpleStorage
+simple_storage = SimpleStorage.deploy({"from": account})
+
+# To transact we need to specified from what address we are interacting (and brownie should know t private key)
+transaction = simple_storage.store(58, {"from": account}) 
+
+# To wait 1 block
+transaction.wait(1)
+
+# To get the new value
+print(simple_storage.retrieve())
+```
+
+## Interacting with contract
+We can write otrhe script to itneract with the contract. It is important to run it like ```brownie run scripts/new-script.py --network networkname``` if it is a mainet/testnet
+
+We need to import the contract we want to use from brownie, this will bring all its deployment, which we can access as if they where in an array. For instance:
+```python
+brownie import Contract
+Contract[-1] #give us the most recent deployment
+Contract[0] #give us the first deployment
+```
+
+## Brownie console
+We need to execute the line ```brownie console```
+
+## Testing
+A test should be writen in python, put in the test folder, and its code should have functions with the next structure:
+1. Arrange: Preliminary data to do the test, and the expected value
+1. Act: A contract call or transaction with the arrange data
+1. Assert: Where we check the value obtained with the value expected
+For instance: 
+```python
+def test_deploy():
+    # Arrange
+    account = accounts[0]
+    expected = 15
+    # Act
+    simple_storage = SimpleStorage.deploy({"from": account})
+    starting_value = simple_storage.retrieve()
+    
+    # Assert
+    assert starting_value ==expected
+    pass
+```
+
+To run:
+* Every test: ```brownie test```
+* A particular test: ```brownie test -k test_function_name```
+* Every test and show variables when everything fails: ```brownie test --pdb```
+* It will specified which test went ok and which one no: ```brownie test -s```
+
+The ```brownie test``` depends on pytest, so we can look to [pytest documentaction](https://docs.pytest.org/en/6.2.x/getting-started.html) to learn more about testing
 
