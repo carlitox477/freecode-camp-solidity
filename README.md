@@ -361,3 +361,135 @@ To run:
 
 The ```brownie test``` depends on pytest, so we can look to [pytest documentaction](https://docs.pytest.org/en/6.2.x/getting-started.html) to learn more about testing
 
+# Lesson 6
+## Importing chainlink contracts
+While Remix understand that **@chailink/contracts** reffers to chailinks contracts that can be download by npm, brownie doesn't. However, brownie CAN download them from github. The problemas relays on, that if we upload this contract to the blockchain with github references, this may not work (the repository can be  changed), but we can tell brownie to change **@chailink/contracts** with other string when it run it. This can be done in our *brownie-config.yaml*. For instance
+```yaml
+dependencies:
+  #- <organization/repo>@<version>
+  - smartcontractkit/chainlink-brownie-contracts@1.1.1
+compiler:
+  solc:
+    remappings:
+      - '@chainlink=smartcontractkit/chainlink-brownie-contracts@1.1.1'
+```
+
+## Verify contracts
+We will need to delete the imported code and add its code. Replacing immports with the actual code is known as "flattening".
+
+A better way to verify the contract is take advantage of brownie deploy function. With an etherscan API key we can verify our contract inmediatelly after deploying with the next code:
+```python
+account = get_account()
+contract=Contract.deploy({"from":account}, publish_source=True)
+```
+This will require to specify in the .env file the etherscan token as:
+```
+export ETHERSCAN_TOKEN = <API-KEY>
+```
+
+## Mock contracts
+A mok contract is one which is deployed on our develompent network to simulate a contract which is in the mainet/testnet. We should prepare a deploy file which allow us to deploy the contract in the testent, mainet and the delompent network.
+
+* We should avoid hardcoded addresses in the contract. We should give the adresses through the constructor
+
+
+## Add a network to brownie
+* ```brownie networks list```:  List all the networks saved
+* ```brownie networks add [environment] [name] host=[host] chainid=[chaiId]```: To add a new network
+
+### Test in networks
+```brownie test --network <network-name>```
+
+### Test in mainets forks
+If we fork a blockchain, we can use all the contracts inside the network BEFORE the fork. for this we will need to add a new network which will be out fork. We can get our for from alchemy and the add it using the next line ```brownie networks add development mainnet-fork-dev cmd=ganache-cli host=http://127.0.0.1 fork=https://eth-mainnet.alchemyapi.io/v2/API-KEY accounts=10 mnemonic=brownie port=8546```
+
+This will also create fake account which we can access using accounts from brownie
+
+# Lesson 7: Lottery
+## address payable
+* Only **address payable** can use the methods: *send()*, *transfer()* and *call()*
+* An address can be casted to a **address payable**:
+```solidity
+address addr1 = msg.sender;
+address payable addr2 = addr1; // Incorrect
+address payable addr3 = address(uint160(addr1)); // Correct since Solidity >= 0.5.0
+address payable addr4 = payable(addr1); // Correct since Solidity >= 0.6.0
+```
+* More information [here](https://ethereum.stackexchange.com/questions/64108/whats-the-difference-between-address-and-address-payable)
+
+## Insecure randomness
+[News](https://es.cointelegraph.com/news/85-million-meebits-nft-project-exploited-attacker-nabs-700-000-collectible)
+[Explanation](https://forum.openzeppelin.com/t/understanding-the-meebits-exploit/8281/2) (see PatrickAlphaC answer)
+```solidity
+uint(
+    keccak256( //Hashing function
+        abi.encodePacked(
+            nonce, // Is predictable (AKA, transaction number)
+            msg.sender, //Not random
+            block.difficulty, //Can be manipulated by miners
+            block.timestamp // Is predictable
+        )
+    )
+)
+```
+
+## Secure randomness
+* Need to use an oracle. For instance: Chainlink VRF
+
+### Using Chailink VRF
+* To use the Chainlink VRF we need to provide the contract with the appropiate token (LINK).
+* The contract which will use the random number has to be **VRFConsumerBase**
+```solidity
+import "@chainlink/contracts/src/v0.6/VRFConsumerBase.sol";
+
+contract Lottery is VRFConsumerBase{
+    //...
+}
+```
+* To get the random number we need to give the constructor 2 parameters and use the **VRFConsumerBase** constructor
+```solidity
+constructor(
+        address _vrfCoordinator,
+        address _link,
+        uint256 _fee,
+        bytes32 _keyHash
+    ) public VRFConsumerBase(_vrfCoordinator,_link){
+        //...
+    }
+```
+* The **VRFConsumerBase** will allow us to use 2 methods:
+    * requestRandomness(keyHash,fee): This method will request the VRF node a random number, and give us a requestId (byte32 type) 
+    * fulfillRandomness(bytes32 _requestId, uint256 _randomness): A method to override, will be called by the VRFCoordinator. The _randomness will be a random number
+
+* It is important that the contract which call the *requestRandomness* function has been funded with link. We can do that with this python function:
+```python
+from brownie import (
+    interface) #It is importan to add the LinkTokenInterface to the interface folder
+
+def fund_with_link(contract_address, sender_account, link_contract, amount=(1* 10**18)):
+    #opcion 1
+    # tx = link_contract.transfer(contract_address,amount, {"from":sender_account})
+    
+    #Opcion 2
+    link_token_contract = interface.LinkTokenInterface(link_contract.address)
+
+    print("Funding "+contract_address+" with LINK")
+    tx = link_token_contract.transfer(contract_address,amount, {"from":sender_account})
+    
+    link_amount=amount/ (10**18)
+    tx.wait(1)
+
+    print(contract_address+": Funded with "+str(link_amount)+" link")
+    return tx
+```
+
+## Events
+Events aren't accesible for smart contracts, but they are stored in the blockchain
+
+## Testing
+### Unit tests
+A way of testing the smallest pieces of code in an isolated instance.
+We want to test every line of our smart contract
+
+### Integration testing
+A way of testing across multiple complex systems
