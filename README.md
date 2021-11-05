@@ -116,7 +116,6 @@ Key values:
 * About SafeMath:
     * For versions >=0.8.0 we don't need it anymore;
     * For versions >=0.6.6 we don't need to call it explicitly;
-*
 
 
 # Financial decisions
@@ -493,3 +492,8 @@ We want to test every line of our smart contract
 
 ### Integration testing
 A way of testing across multiple complex systems
+
+# Lesson 8
+## Baking a contract in brownie
+Brownie allow us create standarize projects. Currently there are 12, for more information about them [here](https://github.com/brownie-mix)
+To create one of this project only use the line ```brownie bake STANDARIZE-PROJECT-NAME```
