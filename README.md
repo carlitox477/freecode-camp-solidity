@@ -497,3 +497,9 @@ A way of testing across multiple complex systems
 ## Baking a contract in brownie
 Brownie allow us create standarize projects. Currently there are 12, for more information about them [here](https://github.com/brownie-mix)
 To create one of this project only use the line ```brownie bake STANDARIZE-PROJECT-NAME```
+
+# Lesson 9: ERC20 tokens
+ERC20 token standard is a smart contract which represents a token. Click [here](https://eips.ethereum.org/EIPS/eip-20) to see the documentation.
+
+
+
