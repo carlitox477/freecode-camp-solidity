@@ -501,5 +501,20 @@ To create one of this project only use the line ```brownie bake STANDARIZE-PROJE
 # Lesson 9: ERC20 tokens
 ERC20 token standard is a smart contract which represents a token. Click [here](https://eips.ethereum.org/EIPS/eip-20) to see the documentation.
 
+# Lesson 10: AAVE
+Aave documentation [here](https://docs.aave.com/portal/)
+
+* We can't deposit ETH directly, we need to convert it to WETH
+* To get an ABI we can copy&paste a contract or an interface (If we are deploying then in a testnet or mainet)
+* To get WETH on a ETH network we show call the method *deposit* from the WETH contract.
+* LendingPool contract: exposes all the user-oriented action that can be invoked using solidity or web 3 libraries. More information [here](https://docs.aave.com/developers/the-core-protocol/lendingpool). For different reasons, the lending pool contract address may change. So it is recommended to use the LendingPoolAddressesProvider to get a useful LendingPool contract address.
+* LendingPoolAddressesProvider: It has the addresses register of the protocol for a particular market. Documentation [here](https://docs.aave.com/developers/the-core-protocol/addresses-provider)
+* Before sending an ERC20 token we need to approve the amount we want to transfer
 
 
+## When we test on a local net and when on a mainnet-fork?
+If we are using some contract like an oracle we must do it on a local net with mocks, if not (our contract don't need the interaction of an external contract), maybe a mainnet-fork is more convenient
+
+
+# Lesson 11: NFT
+* Token standard [EIP-721](https://eips.ethereum.org/EIPS/eip-721)
