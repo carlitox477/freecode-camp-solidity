@@ -518,3 +518,20 @@ If we are using some contract like an oracle we must do it on a local net with m
 
 # Lesson 11: NFT
 * Token standard [EIP-721](https://eips.ethereum.org/EIPS/eip-721)
+* Semi-fungible tokens: [EIP-1155](https://eips.ethereum.org/EIPS/eip-1155)
+* To store metadata we use an URI. This allow us not spending too much gas
+* IPFS:
+    * [General explanation](https://www.youtube.com/watch?v=djES6W3yzwQ)
+    * [Documentation](https://ipfs.io/)
+    * Steps to store an image:
+        1. Get IPFS
+        1. Add token URI json file to IPFS
+        1. Add IPFS URI to your NFT URI
+* With the line ```brownie bake nft-mix``` we can create an nft project
+* Store data on blockchange is currently (year 2021) super expensive, so an image or a video is super super SUPER expensive. We can use different decentralized tool, though, whithout KYC as: 0chain, skynet, arweave, filecoin and IPFS.
+
+## IPFS 
+* Download IPFS command line [here](https://docs.ipfs.io/install/command-line/#official-distributions)
+* Run ipfs:
+    1. ```ipfs init```
+    1.  ```ipfs daemon```
