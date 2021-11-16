@@ -535,3 +535,76 @@ If we are using some contract like an oracle we must do it on a local net with m
 * Run ipfs:
     1. ```ipfs init```
     1.  ```ipfs daemon```
+
+## Pinata
+It runs it owns IPFS node
+
+# Lesson 12: Upgrades
+[How contract migration works](https://blog.trailofbits.com/2018/10/29/how-contract-migration-works/)
+* [Open zeppelin proxy contracts](https://github.com/OpenZeppelin/openzeppelin-contracts/tree/master/contracts/proxy)
+
+* Not really/parameterize:
+    * can't add new storage
+    * can't add new logic
+    * We update variables, it is simple but not flexible, only the admins/owners can updated (you can make a external contract as owner)
+* Social Yeet/migration: You just tell the community to use the new contract.
+    * Pros: Truest to blockchain values; easiest to audit
+    * Cons: lot of work to convince users to move;different addresses
+* Proxies: we have
+    * implementation contract: which has all our code of our protocol. When we upgrade, we launch a brand new implementation contract.
+    * proxy contract: which point to which implementation is the "correct" one, and routes everyone's function calls to that contract
+    * users: they make calls to the proxy
+    * admin: This is the user (or group of users/voters) who upgrade to new implementation contracts.
+
+## Biggest gotchas
+1. Storage clashes: functions point to storage spots in solidity, NOT to value names. This means that the order of the variables matters. In a single contract this doesn't matter, but whe nwe work with proxies this matter a lot.
+```solidity
+uint256 value1; #slot 1
+uint256 value2; #slot 2
+
+function setValue(uint256 _newValue){
+    // This function set the slot 1 to _newValue.
+    //If we call this function from another contract (proxy) this matters
+    value=2;
+}
+```
+1. Function selector clashes
+    * A function selector is a 4 bytes hash of a function name and function signature that define a function. This mean that collisions may happen with totally differenct functions
+
+## Transparent proxy pattern
+* Admins can't call implementation contract functions
+* Admin functions are functions that govern the upgrades
+* Users still powerless on admin functions
+* Admin functions are located in the proxy contract
+
+## Universal upgradeable proxies (UUPS)
+* AdminOnly upgrade functions are in the implementation contracts, instead of the proxy.
+* This way we will be safe of function selector clashes, save gas
+* This contract must have the upgradable functionallity, 
+
+## Diammond pattern
+* It allows multiple implementation contracts
+* It allows more granular upgrades
+* We will have more complicated code
+* [Documentation](https://eips.ethereum.org/EIPS/eip-2535)
+* Currently there is no standard
+
+## TransparentUpgradeableProxy contract
+To deploy [this contract](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/proxy/transparent/TransparentUpgradeableProxy.sol)
+We need the next arguments:
+* Logic: Contract implementation address
+* Admin: Proxy admin address
+* Data: Encoded initializer function
+
+We may need to add some send more gas to the contract that the recommended.
+
+
+```python
+intializer = deployed_contract.store, 1
+```
+
+They are optionals, but they are really useful
+
+To do: verify TransparentUpgradeableProxy
+
+## Lesson 13
